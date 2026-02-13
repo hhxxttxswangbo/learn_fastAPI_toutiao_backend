@@ -14,8 +14,9 @@
 
 from datetime import datetime
 
-from sqlalchemy import DateTime, String, Integer
+from sqlalchemy import DateTime, String, Integer, Index, Text, ForeignKey
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from typing import Optional
 
 
 class Base(DeclarativeBase):
@@ -99,3 +100,26 @@ class Category(Base):
             str: 对象的字符串表示，包含 id、name 和 sort_order
         """
         return f"<Category(id={self.id},name={self.name},sort_order={self.sort_order})>"
+
+
+class News(Base):
+    __tablename__ = "news"
+    # 创建索引：提升查询速度
+    __table_args__ = (
+        Index('fk_news_category_idx', 'category_id'),  # 高频查询
+        Index('idx_publish_time', 'publish_time')  # 高频查询，新闻系统刚需
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True, comment="新闻ID")
+    title: Mapped[str] = mapped_column(String(255), nullable=False, comment="新闻标题")
+    description: Mapped[Optional[str]] = mapped_column(String(500), comment="新闻简介")
+    content: Mapped[str] = mapped_column(Text, nullable=False, comment="新闻内容")
+    image: Mapped[Optional[str]] = mapped_column(String(255),
+                                                 comment="封⾯图⽚URL")  # Optional[str] 表示这个字段的值可以是字符串（str），也可以是 None（即数据库中允许为 NULL）。
+    author: Mapped[Optional[str]] = mapped_column(String(50), comment="作者")
+    category_id: Mapped[int] = mapped_column(Integer, ForeignKey('news_category.id'), nullable=False, comment="分类ID")
+    views: Mapped[int] = mapped_column(Integer, default=0, nullable=False, comment="浏览量")
+    publish_time: Mapped[datetime] = mapped_column(DateTime, default=datetime.now, comment="发布时间")
+
+    def __repr__(self):
+        return f"<News(id={self.id}, title='{self.title}', views={self.views})>"

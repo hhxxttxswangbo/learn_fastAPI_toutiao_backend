@@ -16,7 +16,7 @@ FastAPI 的路由系统：
 4. 在路由处理函数里面调用 crud 封装好的方法，响应结果
 """
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.db_conf import get_db
@@ -27,6 +27,8 @@ from crud import news
 # prefix: 所有路由的前缀，这个路由器下的所有接口都会加上这个前缀
 # tags: 用于在 API 文档中分组，相同标签的接口会显示在一起
 router = APIRouter(prefix="/api/news", tags=["news"])
+
+
 # 例如：定义的路由是 /categories，实际访问路径是 /api/news/categories
 
 
@@ -73,13 +75,33 @@ async def get_categories(skip: int = 0, limit: int = 100, db: AsyncSession = Dep
     # 调用 crud 层的函数查询数据库
     # 传入数据库会话和分页参数
     categories = await news.get_categories(db, skip, limit)
-    
+
     # 返回标准格式的响应
     # 使用统一的响应格式，方便前端处理
     return {
         "code": 200,  # 状态码：200 表示成功
-        "message": "Hello World",  # 响应消息
+        "message": "获取新闻分类成功",  # 响应消息
         "data": categories  # 实际数据：分类列表
     }
 
 
+@router.get("/list")
+async def get_news_list(
+        category_id: int = Query(..., alias="categoryId"),
+        page: int = 1,
+        page_size: int = Query(10, alias="pageSize", le=100),
+        db: AsyncSession = Depends(get_db)):
+    offset = (page - 1) * page_size
+    new_list = await news.get_news_list(db, category_id, offset, page_size)
+    total = await news.get_news_count(db, category_id)
+    # has_more 跳过的 + 当前列表里面的数量 < 总量
+    has_more = (offset + len(new_list)) < total
+    return {
+        "code": 200,
+        "message": "获取新闻列表成功",
+        "data": {
+            "list": new_list,
+            "total": total,
+            "hasMore": has_more,
+        }
+    }

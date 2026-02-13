@@ -11,8 +11,8 @@ CRUD 是 Create（创建）、Read（读取）、Update（更新）、Delete（�
 """
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-from models.news import Category
+from sqlalchemy import select, func
+from models.news import Category, News
 
 
 async def get_categories(db: AsyncSession, skip: int = 0, limit: int = 100):
@@ -48,14 +48,28 @@ async def get_categories(db: AsyncSession, skip: int = 0, limit: int = 100):
     # .offset(skip) 表示跳过前 skip 条记录（分页偏移）
     # .limit(limit) 表示最多返回 limit 条记录（分页大小）
     stmt = select(Category).offset(skip).limit(limit)
-    
+
     # 执行查询
     # db.execute(stmt) 将查询语句发送到数据库执行
     # await 关键字表示这是一个异步操作，需要等待数据库响应
     result = await db.execute(stmt)
-    
+
     # 提取结果并返回
     # result.scalars() 提取结果中的标量值（即 Category 对象）
     # .all() 获取所有结果，返回一个列表
     # 返回格式：[Category(...), Category(...), ...]
     return result.scalars().all()
+
+
+async def get_news_list(db: AsyncSession, category_id: int, skip: int = 0, limit: int = 10):
+    # id条件查询   where
+    stmt = select(News).where(News.category_id == category_id).offset(skip).limit(limit)
+    result = await db.execute(stmt)
+    return result.scalars().all()
+
+
+async def get_news_count(db: AsyncSession, category_id: int):
+    # News.id为唯一标识 进行计算查询func.count(News.id)
+    stmt = select(func.count(News.id)).where(News.category_id == category_id)
+    result = await db.execute(stmt)
+    return result.scalar_one()  # 只能有一个
