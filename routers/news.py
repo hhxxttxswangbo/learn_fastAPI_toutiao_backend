@@ -16,7 +16,7 @@ FastAPI 的路由系统：
 4. 在路由处理函数里面调用 crud 封装好的方法，响应结果
 """
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.db_conf import get_db
@@ -103,5 +103,36 @@ async def get_news_list(
             "list": new_list,
             "total": total,
             "hasMore": has_more,
+        }
+    }
+
+
+@router.get('/detail')
+async def get_news_detail(news_id: int = Query(..., alias="id"), db: AsyncSession = Depends(get_db)):
+    # 获取新闻详情 + 浏览量 +1 + 相关新闻
+    news_detail = await news.get_news_detail(db, news_id)
+    if not news_detail:
+        raise HTTPException(status_code=404, detail="新闻不存在")
+
+    # 浏览量
+    news_view_res = await news.increase_news_views(db, news_detail.id)
+    if not news_view_res:
+        raise HTTPException(status_code=404, detail="新闻不存在")
+
+    related_news = await news.get_related_news(db, news_detail.id, news_detail.category_id)
+
+    return {
+        "code": 200,
+        "message": "success",
+        "data": {
+            "id": news_detail.id,
+            "title": news_detail.title,
+            "content": news_detail.content,
+            "image": news_detail.image,
+            "author": news_detail.author,
+            "publishTime": news_detail.publish_time,
+            "categoryId": news_detail.category_id,
+            "views": news_detail.views,
+            "relatedNews": related_news,
         }
     }
