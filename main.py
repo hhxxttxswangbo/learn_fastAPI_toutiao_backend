@@ -9,13 +9,12 @@
 """
 
 from fastapi import FastAPI
-from routers import news
+from routers import news, user
 from fastapi.middleware.cors import CORSMiddleware
 
 # 创建 FastAPI 应用实例
 # app 是整个应用的核心对象，所有的路由、中间件配置都挂载在这个对象上
 app = FastAPI()
-
 
 # 配置跨域资源共享（CORS）中间件
 # CORS 是浏览器安全机制，用于限制跨域请求
@@ -47,3 +46,4 @@ def read_root():
 # 这样所有在 news.router 中定义的路由都会被包含到应用中
 # 例如：如果 news.py 中定义了 /categories，最终访问路径就是 /api/news/categories
 app.include_router(news.router)
+app.include_router(user.router)

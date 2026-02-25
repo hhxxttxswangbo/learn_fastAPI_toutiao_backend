@@ -1,8 +1,55 @@
+import uuid
+
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, update
-from models.users import User
+from watchfiles import awatch
+
+from models.users import User, UserToken
+from schemas.users import UserRequest
+from utils import security
+from datetime import datetime, timedelta
 
 
 # 根据用户名查询数据库
 async def get_user_by_username(db: AsyncSession, username: str):
-    select(User).where(User.username == username)
+    query = select(User).where(User.username == username)
+    result = await db.execute(query)
+    return result.scalar_one_or_none()
+
+
+# 创建用户
+async def create_user(db: AsyncSession, user_data: UserRequest):
+    # passlib加密
+    hashed_password = security.get_password_hash(user_data.password)
+    # 创建User对象
+    user = User(
+        username=user_data.username,
+        password=hashed_password
+    )
+    db.add(user)
+    await db.commit()
+    await db.refresh(user)  # 从数据库读回最新的User
+    return user
+
+
+# 生成token
+async def create_token(db: AsyncSession, user_id: int):
+    # 生成token + 设置过期时间 查询数据库当前用户是否有token 有：更新，没有：添加
+    token = str(uuid.uuid4())
+    expires_at = datetime.now() + timedelta(days=7)
+    query = select(UserToken).where(UserToken.id == user_id)
+    result = await db.execute(query)
+    user_token = result.scalar_one_or_none()
+    if user_token:
+        user_token.token = token
+        user_token.expires_at = expires_at
+    else:
+        user_token = UserToken(
+            user_id=user_id,
+            token=token,
+            expires_at=expires_at
+        )
+        db.add(user_token)
+        await db.commit()
+
+    return user_token
