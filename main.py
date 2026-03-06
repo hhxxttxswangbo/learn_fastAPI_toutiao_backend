@@ -12,6 +12,8 @@ from fastapi import FastAPI
 from routers import news, user
 from fastapi.middleware.cors import CORSMiddleware
 
+from utils.exception_handles import register_exception_handlers
+
 # 创建 FastAPI 应用实例
 # app 是整个应用的核心对象，所有的路由、中间件配置都挂载在这个对象上
 # 使用 unpkg CDN 替代默认的 jsdelivr，解决国内访问超时问题
@@ -23,6 +25,9 @@ app = FastAPI(
     swagger_js_url="https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js",
     swagger_css_url="https://unpkg.com/swagger-ui-dist@5/swagger-ui.css",
 )
+
+# 注册异常处理器
+register_exception_handlers(app)
 
 # 配置跨域资源共享（CORS）中间件
 # CORS 是浏览器安全机制，用于限制跨域请求
