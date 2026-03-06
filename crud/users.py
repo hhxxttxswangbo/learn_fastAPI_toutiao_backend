@@ -50,6 +50,6 @@ async def create_token(db: AsyncSession, user_id: int):
             expires_at=expires_at
         )
         db.add(user_token)
-        await db.commit()
+    await db.commit()
 
-    return user_token
+    return token
