@@ -8,3 +8,8 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 def get_password_hash(password: str):
     truncated_password = password[:72]
     return pwd_context.hash(truncated_password)
+
+
+# 密码验证
+def verify_password(plain_password, hashed_password):
+    return pwd_context.verify(plain_password, hashed_password)

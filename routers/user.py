@@ -1,10 +1,14 @@
+from fastapi.security import OAuth2PasswordRequestForm
 from starlette import status
 from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from models.users import User
 from schemas.users import UserRequest, UserAuthResponse, UserInfoResponse
 from config.db_conf import get_db
 from crud import users
 from utils.response import success_response
+from utils.auth import get_current_user
 
 router = APIRouter(prefix="/api/user", tags=["users"])
 
@@ -34,5 +38,26 @@ async def register(user_data: UserRequest, db: AsyncSession = Depends(get_db)):
     #     },
     # }
 
+    # model_validate 提取ORM对象User中的属性值
     resource_data = UserAuthResponse(token=token, user_info=UserInfoResponse.model_validate(user))
     return success_response(message="User created successfully", data=resource_data)
+
+
+@router.post('/login')
+async def login(user_data: UserRequest, db: AsyncSession = Depends(get_db)):
+    # 登录逻辑: 验证用户是否存在  验证密码   生成Token   响应结果
+
+    user = await users.authenticate_user(db, user_data.username, user_data.password)
+    if not user:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
+                            detail="Incorrect username or password")
+    token = await users.create_token(db, user.id)
+    resource_data = UserAuthResponse(token=token, user_info=UserInfoResponse.model_validate(user))
+    return success_response(message="User logged in", data=resource_data)
+
+
+# 获取用户信息
+@router.get('/info')
+# 依赖注入 能拿到get_current_user参数与返回值
+async def get_user_info(user: User = Depends(get_current_user)):
+    return success_response(message="获取用户信息成功", data=UserInfoResponse.model_validate(user))
