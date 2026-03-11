@@ -3,8 +3,9 @@ from starlette import status
 from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from crud.users import update_user
 from models.users import User
-from schemas.users import UserRequest, UserAuthResponse, UserInfoResponse
+from schemas.users import UserRequest, UserAuthResponse, UserInfoResponse, userUpdateRequest
 from config.db_conf import get_db
 from crud import users
 from utils.response import success_response
@@ -61,3 +62,12 @@ async def login(user_data: UserRequest, db: AsyncSession = Depends(get_db)):
 # 依赖注入 能拿到get_current_user参数与返回值
 async def get_user_info(user: User = Depends(get_current_user)):
     return success_response(message="获取用户信息成功", data=UserInfoResponse.model_validate(user))
+
+
+# 修改用户信息:验证token  更新（用户输入数据 put提交 请求体参数 定义pydantic模型类） 响应结果
+@router.put('/update')
+# 参数：用户输入的 验证token的 db
+async def update_user_info(user_data: userUpdateRequest, user: User = Depends(get_current_user),
+                           db: AsyncSession = Depends(get_db)):
+    user = await update_user(db, user.username, user_data)
+    return success_response(message="更新用户信息成功", data=UserInfoResponse.model_validate(user))
