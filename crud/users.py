@@ -1,13 +1,14 @@
 import uuid
+from datetime import datetime, timedelta
 
 from fastapi import HTTPException
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, update
 
 from models.users import User, UserToken
 from schemas.users import UserRequest, userUpdateRequest
 from utils import security
-from datetime import datetime, timedelta
+from utils.security import get_password_hash
 
 
 # 根据用户名查询数据库
@@ -97,3 +98,18 @@ async def update_user(db: AsyncSession, username: str, user_data: userUpdateRequ
     # 获取更新后的用户
     updated_user = await get_user_by_username(db, username)
     return updated_user
+
+
+# 先验证旧密码是否正确  新密码加密 修改密码
+async def update_user_password(db: AsyncSession, user: User, old_password: str, new_password: str):
+    if not security.verify_password(old_password, user.password):
+        return False
+
+    hash_new_password = get_password_hash(new_password)
+    user.password = hash_new_password
+    # 由sqlalchemy真正接管这个User对象，确保可以commit
+    # 规避session过期或关闭导致的不能提交的问题
+    db.add(user)
+    await db.commit()
+    await db.refresh(user)
+    return True

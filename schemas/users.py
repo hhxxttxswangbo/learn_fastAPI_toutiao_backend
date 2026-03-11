@@ -42,10 +42,15 @@ class UserAuthResponse(BaseModel):
     )
 
 
-#     更新用户信息的模型类
+# 更新用户信息的模型类
 class userUpdateRequest(BaseModel):
     nickname: str = None
     avatar: str = None
     gender: str = None
     bio: str = None
     phone: str = None
+
+
+class passwordUpdateRequest(BaseModel):
+    old_password: str = Field(..., alias="oldPassword", description="旧密码")
+    new_password: str = Field(..., min_length=6, alias="oldPassword", description="新密码")
