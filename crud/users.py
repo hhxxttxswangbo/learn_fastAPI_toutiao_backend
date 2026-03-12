@@ -38,7 +38,7 @@ async def create_token(db: AsyncSession, user_id: int):
     # 生成token + 设置过期时间 查询数据库当前用户是否有token 有：更新，没有：添加
     token = str(uuid.uuid4())
     expires_at = datetime.now() + timedelta(days=7)
-    query = select(UserToken).where(UserToken.id == user_id)
+    query = select(UserToken).where(UserToken.user_id == user_id)
     result = await db.execute(query)
     user_token = result.scalar_one_or_none()
     if user_token:
@@ -105,11 +105,13 @@ async def update_user_password(db: AsyncSession, user: User, old_password: str, 
     if not security.verify_password(old_password, user.password):
         return False
 
-    hash_new_password = get_password_hash(new_password)
-    user.password = hash_new_password
-    # 由sqlalchemy真正接管这个User对象，确保可以commit
-    # 规避session过期或关闭导致的不能提交的问题
-    db.add(user)
-    await db.commit()
-    await db.refresh(user)
-    return True
+    try:
+        hash_new_password = get_password_hash(new_password)
+        # 使用 update 语句直接更新，避免 session 对象状态问题
+        query = update(User).where(User.id == user.id).values(password=hash_new_password)
+        await db.execute(query)
+        await db.commit()
+        return True
+    except Exception as e:
+        await db.rollback()
+        raise e

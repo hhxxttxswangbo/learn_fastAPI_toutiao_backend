@@ -1,6 +1,7 @@
 # 数据类型校验
-from pydantic import BaseModel, Field, ConfigDict
 from typing import Optional
+
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class UserRequest(BaseModel):
@@ -33,7 +34,7 @@ class UserInfoResponse(UserInfoBase):
 # data 数据类型
 class UserAuthResponse(BaseModel):
     token: str
-    user_info: UserInfoResponse = Field(..., alias="user_info")
+    user_info: UserInfoResponse = Field(..., alias="userInfo")
 
     # 模型类配置
     model_config = ConfigDict(
@@ -53,4 +54,4 @@ class userUpdateRequest(BaseModel):
 
 class passwordUpdateRequest(BaseModel):
     old_password: str = Field(..., alias="oldPassword", description="旧密码")
-    new_password: str = Field(..., min_length=6, alias="oldPassword", description="新密码")
+    new_password: str = Field(..., min_length=6, alias="newPassword", description="新密码")
