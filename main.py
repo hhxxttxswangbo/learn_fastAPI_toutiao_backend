@@ -9,7 +9,7 @@
 """
 
 from fastapi import FastAPI
-from routers import news, user
+from routers import news, user, favorite
 from fastapi.middleware.cors import CORSMiddleware
 
 from utils.exception_handles import register_exception_handlers
@@ -60,3 +60,4 @@ def read_root():
 # 例如：如果 news.py 中定义了 /categories，最终访问路径就是 /api/news/categories
 app.include_router(news.router)
 app.include_router(user.router)
+app.include_router(favorite.router)
