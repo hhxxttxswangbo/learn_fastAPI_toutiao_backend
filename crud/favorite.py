@@ -5,8 +5,6 @@ from charset_normalizer import detect
 from fastapi import HTTPException
 from sqlalchemy import func, select, update, delete
 from sqlalchemy.ext.asyncio import AsyncSession
-
-from models import favorite
 from models.favorite import Favorite
 
 
