@@ -3,7 +3,7 @@ from starlette import status
 from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from crud.favorite import is_news_favorite, add_favorite_news, delete_favorite_news
+from crud.favorite import is_news_favorite, add_favorite_news, delete_favorite_news, clear_favorite_news
 from crud.users import update_user, update_user_password
 from models.users import User
 from schemas.favorite import FavoriteCheckResponse, AddFavoriteRequest, FavoriteListResponse
@@ -60,3 +60,10 @@ async def list_favorites(user: User = Depends(get_current_user), page: int = Que
 
     data = FavoriteListResponse(list=favorite_list, total=total, hasMore=has_more)
     return success_response(message='获取收藏列表成功', data=data)
+
+
+# 清空收藏列表
+@router.delete("/clear")
+async def clear_favorites(user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    count = await clear_favorite_news(db, user.id)
+    return success_response(message=f"清空收藏了{count}条记录")

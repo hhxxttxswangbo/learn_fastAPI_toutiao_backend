@@ -53,5 +53,14 @@ async def get_favorite_list(db: AsyncSession, user_id: int, page: int = 1, page_
              .offset(offset).limit(page_size))
 
     result = await db.execute(query)
+    # - 查询单个模型（如 select(News)）→ 用 scalars().all()
+    # - 查询多个字段/混合查询 → 用 result.all() 返回完整元组
     rows = result.all()
     return rows, total
+
+
+async def clear_favorite_news(db: AsyncSession, user_id: int):
+    query = delete(Favorite).where(Favorite.user_id == user_id)
+    result = await db.execute(query)
+    await db.commit()
+    return result.rowcount or 0
