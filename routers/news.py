@@ -21,6 +21,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.db_conf import get_db
 from crud import news
+from crud import news_cache
 
 # 创建路由对象
 # APIRouter 用于组织路由，支持模块化开发
@@ -74,7 +75,7 @@ async def get_categories(skip: int = 0, limit: int = 100, db: AsyncSession = Dep
     """
     # 调用 crud 层的函数查询数据库
     # 传入数据库会话和分页参数
-    categories = await news.get_categories(db, skip, limit)
+    categories = await news_cache.get_categories(db, skip, limit)
 
     # 返回标准格式的响应
     # 使用统一的响应格式，方便前端处理
@@ -92,7 +93,7 @@ async def get_news_list(
         page_size: int = Query(10, alias="pageSize", le=100),
         db: AsyncSession = Depends(get_db)):
     offset = (page - 1) * page_size
-    new_list = await news.get_news_list(db, category_id, offset, page_size)
+    new_list = await news_cache.get_news_list(db, category_id, offset, page_size)
     total = await news.get_news_count(db, category_id)
     # has_more 跳过的 + 当前列表里面的数量 < 总量
     has_more = (offset + len(new_list)) < total
